@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>商品チェックアプリ</title>
+  
+  <!-- Tailwind CSSの読み込み -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- ReactとReactDOMの読み込み -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babelの読み込み (ブラウザ上でReactコードを変換するため) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      overscroll-behavior-y: none;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* iOS用セーフエリア対応 */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- アイコンコンポーネント群 (外部ライブラリに依存しないようSVGで直接定義) ---
+    const IconShoppingCart = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>;
+    const IconPlus = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
+    const IconTrash2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
+    const IconEdit2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
+    const IconCheck = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+    const IconX = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+    const IconFilter = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
+    const IconStore = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 9.78C2 12 4.63 14 8 14s6-2 6-4.22"/></svg>;
+    const IconLayoutList = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/></svg>;
+
+    // --- メインアプリコンポーネント ---
+    const App = () => {
+      const initialData = [
+        { id: 1, name: '商品A', shop: '店舗A', status: '販売中' },
+        { id: 2, name: '商品B', shop: '店舗B', status: '本日売り切れ' },
+        { id: 3, name: '商品C', shop: '店舗A', status: '再販なし' },
+        { id: 4, name: '商品D', shop: '店舗C', status: '販売中' },
+      ];
+
+      const [items, setItems] = useState(() => {
+        const savedItems = localStorage.getItem('inventoryItems');
+        return savedItems ? JSON.parse(savedItems) : initialData;
+      });
+
+      const [shops, setShops] = useState(() => {
+        const savedShops = localStorage.getItem('inventoryShops');
+        return savedShops ? JSON.parse(savedShops) : ['店舗A', '店舗B', '店舗C', 'その他'];
+      });
+
+      const [newItemName, setNewItemName] = useState('');
+      const [newItemShop, setNewItemShop] = useState('');
+      const [newItemStatus, setNewItemStatus] = useState('販売中');
+      
+      const [editingId, setEditingId] = useState(null);
+      const [editName, setEditName] = useState('');
+
+      const [filterShop, setFilterShop] = useState('すべて');
+      const [filterStatus, setFilterStatus] = useState('すべて');
+      const [sortBy, setSortBy] = useState('name');
+
+      const [activeTab, setActiveTab] = useState('home');
+      const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+
+      const [newShopName, setNewShopName] = useState('');
+      const [editingShopOldName, setEditingShopOldName] = useState(null);
+      const [editShopName, setEditShopName] = useState('');
+
+      const statuses = ['販売中', '本日売り切れ', '再販なし'];
+
+      useEffect(() => {
+        localStorage.setItem('inventoryItems', JSON.stringify(items));
+      }, [items]);
+
+      useEffect(() => {
+        localStorage.setItem('inventoryShops', JSON.stringify(shops));
+        if (shops.length > 0 && !shops.includes(newItemShop)) {
+          setNewItemShop(shops[0]);
+        }
+      }, [shops, newItemShop]);
+
+      const handleAddItem = (e) => {
+        e.preventDefault();
+        if (!newItemName.trim() || shops.length === 0) return;
+
+        const newItem = {
+          id: Date.now(),
+          name: newItemName,
+          shop: newItemShop || shops[0],
+          status: newItemStatus,
+        };
+
+        setItems([...items, newItem]);
+        setNewItemName('');
+        setIsAddItemModalOpen(false); // 追加後にモーダルを閉じる
+      };
+
+      const handleDeleteItem = (id) => setItems(items.filter(item => item.id !== id));
+
+      const startEditing = (item) => {
+        setEditingId(item.id);
+        setEditName(item.name);
+      };
+
+      const saveEdit = (id) => {
+        setItems(items.map(item => item.id === id ? { ...item, name: editName } : item));
+        setEditingId(null);
+      };
+
+      const cancelEdit = () => {
+        setEditingId(null);
+        setEditName('');
+      };
+
+      const handleStatusChange = (id, newStatus) => {
+        setItems(items.map(item => item.id === id ? { ...item, status: newStatus } : item));
+      };
+
+      const handleAddShop = (e) => {
+        e.preventDefault();
+        const trimmedName = newShopName.trim();
+        if (!trimmedName || shops.includes(trimmedName)) return;
+        setShops([...shops, trimmedName]);
+        setNewShopName('');
+      };
+
+      const handleDeleteShop = (targetShop) => {
+        setShops(shops.filter(shop => shop !== targetShop));
+        if (filterShop === targetShop) setFilterShop('すべて');
+      };
+
+      const startEditingShop = (shop) => {
+        setEditingShopOldName(shop);
+        setEditShopName(shop);
+      };
+
+      const saveEditShop = () => {
+        const trimmedNewName = editShopName.trim();
+        if (!trimmedNewName || trimmedNewName === editingShopOldName || shops.includes(trimmedNewName)) {
+          cancelEditShop();
+          return;
+        }
+        setShops(shops.map(shop => shop === editingShopOldName ? trimmedNewName : shop));
+        setItems(items.map(item => item.shop === editingShopOldName ? { ...item, shop: trimmedNewName } : item));
+        if (filterShop === editingShopOldName) setFilterShop(trimmedNewName);
+        cancelEditShop();
+      };
+
+      const cancelEditShop = () => {
+        setEditingShopOldName(null);
+        setEditShopName('');
+      };
+
+      const getFilteredAndSortedItems = () => {
+        let result = [...items];
+        if (filterShop !== 'すべて') result = result.filter(item => item.shop === filterShop);
+        if (filterStatus !== 'すべて') result = result.filter(item => item.status === filterStatus);
+
+        result.sort((a, b) => {
+          if (sortBy === 'name') return a.name.localeCompare(b.name, 'ja');
+          if (sortBy === 'shop') return a.shop.localeCompare(b.shop, 'ja');
+          if (sortBy === 'status') return statuses.indexOf(a.status) - statuses.indexOf(b.status);
+          return 0;
+        });
+        return result;
+      };
+
+      const filteredItems = getFilteredAndSortedItems();
+
+      const getStatusColor = (status) => {
+        switch (status) {
+          case '販売中': return 'bg-green-100 text-green-800 border-green-200';
+          case '本日売り切れ': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+          case '再販なし': return 'bg-red-100 text-red-800 border-red-200';
+          default: return 'bg-gray-100 text-gray-800 border-gray-200';
+        }
+      };
+
+      return (
+        <div className="h-screen w-full flex flex-col text-gray-800 font-sans overflow-hidden">
+          {/* ヘッダー */}
+          <header className="bg-indigo-600 text-white p-4 shadow-md z-10 flex-shrink-0 flex items-center pt-safe">
+            <IconShoppingCart className="w-6 h-6 mr-3" />
+            <h1 className="text-xl font-bold tracking-wide">
+              {activeTab === 'home' ? '商品一覧' : '店舗管理'}
+            </h1>
+          </header>
+
+          {/* メインエリア */}
+          <main className="flex-1 overflow-y-auto pb-24 relative">
+            {activeTab === 'home' ? (
+              <div className="p-4">
+                {/* フィルター・ソート */}
+                <div className="bg-white p-3 rounded-xl shadow-sm mb-4 space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <IconFilter className="w-4 h-4 text-indigo-500" />
+                    <span className="font-medium text-gray-600">絞り込み</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={filterShop}
+                      onChange={(e) => setFilterShop(e.target.value)}
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg bg-gray-50 outline-none"
+                    >
+                      <option value="すべて">全店舗</option>
+                      {shops.map(shop => <option key={shop} value={shop}>{shop}</option>)}
+                    </select>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg bg-gray-50 outline-none"
+                    >
+                      <option value="すべて">全状態</option>
+                      {statuses.map(status => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </div>
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                     <span className="text-xs text-gray-500">並び替え</span>
+                     <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="p-1 text-sm bg-transparent font-medium text-indigo-600 outline-none"
+                    >
+                      <option value="name">商品名順</option>
+                      <option value="shop">店舗順</option>
+                      <option value="status">状態順</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 商品リスト */}
+                <div className="space-y-3">
+                  {filteredItems.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400">該当する商品がありません</div>
+                  ) : (
+                    filteredItems.map(item => (
+                      <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            {editingId === item.id ? (
+                              <div className="flex items-center gap-2 mb-2">
+                                <input
+                                  type="text"
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  className="p-1.5 border-b-2 border-indigo-500 w-full focus:outline-none bg-gray-50 rounded-t"
+                                  autoFocus
+                                />
+                                <button onClick={() => saveEdit(item.id)} className="text-green-600 p-2"><IconCheck className="w-5 h-5" /></button>
+                                <button onClick={cancelEdit} className="text-gray-400 p-2"><IconX className="w-5 h-5" /></button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
+                                <button onClick={() => startEditing(item)} className="text-gray-400 p-1"><IconEdit2 className="w-4 h-4" /></button>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded flex items-center">
+                                <IconStore className="w-3 h-3 mr-1" />{item.shop}
+                              </span>
+                            </div>
+                          </div>
+                          <button onClick={() => handleDeleteItem(item.id)} className="text-gray-400 hover:text-red-500 p-2">
+                            <IconTrash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="pt-2 border-t border-gray-50">
+                          <select
+                            value={item.status}
+                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                            className={`w-full p-2 text-sm font-bold rounded-lg border outline-none appearance-none text-center ${getStatusColor(item.status)}`}
+                            style={{ textAlignLast: 'center' }}
+                          >
+                            {statuses.map(status => <option key={status} value={status} className="bg-white text-gray-800">{status}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* 商品追加 FAB */}
+                <button
+                  onClick={() => setIsAddItemModalOpen(true)}
+                  className="fixed bottom-20 right-6 bg-indigo-600 text-white p-4 rounded-2xl shadow-lg shadow-indigo-300 hover:bg-indigo-700 active:scale-95 transition-transform z-20"
+                >
+                  <IconPlus className="w-7 h-7" />
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 space-y-4">
+                {/* 店舗追加 */}
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-600 mb-3 flex items-center"><IconPlus className="w-4 h-4 mr-1" />新しい店舗を追加</h3>
+                  <form onSubmit={handleAddShop} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newShopName}
+                      onChange={(e) => setNewShopName(e.target.value)}
+                      placeholder="店舗名を入力"
+                      className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none"
+                    />
+                    <button type="submit" className="bg-indigo-600 text-white px-5 rounded-lg font-bold shadow-sm">追加</button>
+                  </form>
+                </div>
+
+                {/* 店舗リスト */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <ul className="divide-y divide-gray-100">
+                    {shops.length === 0 ? (
+                      <p className="text-gray-400 text-center py-6">店舗がありません</p>
+                    ) : (
+                      shops.map((shop) => (
+                        <li key={shop} className="p-4 flex items-center justify-between">
+                          {editingShopOldName === shop ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <input
+                                type="text"
+                                value={editShopName}
+                                onChange={(e) => setEditShopName(e.target.value)}
+                                className="p-2 border-b-2 border-indigo-500 flex-1 outline-none bg-gray-50 rounded-t"
+                                autoFocus
+                              />
+                              <button onClick={saveEditShop} className="text-green-600 p-2"><IconCheck className="w-5 h-5" /></button>
+                              <button onClick={cancelEditShop} className="text-gray-400 p-2"><IconX className="w-5 h-5" /></button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="font-medium text-gray-800 text-lg">{shop}</span>
+                              <div className="flex gap-1">
+                                <button onClick={() => startEditingShop(shop)} className="p-2 text-gray-400"><IconEdit2 className="w-5 h-5" /></button>
+                                <button onClick={() => handleDeleteShop(shop)} className="p-2 text-gray-400 hover:text-red-500"><IconTrash2 className="w-5 h-5" /></button>
+                              </div>
+                            </>
+                          )}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* ボトムナビゲーション */}
+          <nav className="bg-white border-t border-gray-200 fixed bottom-0 w-full flex justify-around items-center pb-safe z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+            <button onClick={() => setActiveTab('home')} className={`flex-1 flex flex-col items-center p-3 transition-colors ${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-400'}`}>
+              <IconLayoutList className="w-6 h-6 mb-1" />
+              <span className="text-[10px] font-bold">リスト</span>
+            </button>
+            <button onClick={() => setActiveTab('shops')} className={`flex-1 flex flex-col items-center p-3 transition-colors ${activeTab === 'shops' ? 'text-indigo-600' : 'text-gray-400'}`}>
+              <IconStore className="w-6 h-6 mb-1" />
+              <span className="text-[10px] font-bold">店舗管理</span>
+            </button>
+          </nav>
+
+          {/* 商品追加モーダル */}
+          {isAddItemModalOpen && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+              <div className="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-6 pb-10 sm:pb-6 shadow-2xl animate-slide-up sm:animate-none">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-gray-800">商品を登録</h2>
+                  <button onClick={() => setIsAddItemModalOpen(false)} className="text-gray-400 bg-gray-100 rounded-full p-2"><IconX className="w-5 h-5" /></button>
+                </div>
+                
+                <form onSubmit={handleAddItem} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">商品名</label>
+                    <input
+                      type="text"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      placeholder="例：水、おにぎり"
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none text-lg"
+                      required autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">店舗</label>
+                    <select
+                      value={newItemShop}
+                      onChange={(e) => setNewItemShop(e.target.value)}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none text-lg"
+                    >
+                      {shops.map(shop => <option key={shop} value={shop}>{shop}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">現在の状態</label>
+                    <select
+                      value={newItemStatus}
+                      onChange={(e) => setNewItemStatus(e.target.value)}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none text-lg"
+                    >
+                      {statuses.map(status => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-indigo-700 shadow-md mt-4">
+                    登録する
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
