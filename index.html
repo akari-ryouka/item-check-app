@@ -10,6 +10,7 @@
     .checkbox-label { display: flex; align-items: center; font-size: 13px; font-weight: normal; cursor: pointer; color: #333; margin-bottom: 10px;}
     .checkbox-label input { margin-right: 8px; width: auto; }
     input[type="text"], textarea, select { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 8px; }
+    textarea { height: 80px; resize: vertical; }
     .flex { display: flex; gap: 10px; }
     .flex > div { flex: 1; }
     button { width: 100%; padding: 10px; background: #0075c2; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; }
@@ -18,7 +19,7 @@
   </style>
 </head>
 <body>
-  <h2>スカウト設定（新仕様）</h2>
+  <h2>スカウト設定</h2>
   
   <div class="group">
     <label>① タイトル</label>
@@ -32,7 +33,12 @@
   </div>
 
   <div class="group">
-    <label>③ 選考特徴アイコン</label>
+    <label>③ 本文</label>
+    <textarea id="body" placeholder="本文を入力"></textarea>
+  </div>
+
+  <div class="group">
+    <label>④ 選考特徴アイコン</label>
     <select id="feature_icon">
       <option value="">（選択しない）</option>
       <option value="つけない">つけない</option>
@@ -46,7 +52,7 @@
   </div>
 
   <div class="group">
-    <label>④ ホームページリンク</label>
+    <label>⑤ ホームページリンク</label>
     <select id="hp_link_flag">
       <option value="">（選択しない）</option>
       <option value="希望する">希望する</option>
@@ -56,16 +62,16 @@
 
   <div class="group">
     <div class="flex">
-      <div><label>⑤ HP1 タイトル</label><input type="text" id="hp_name_1"></div>
-      <div><label>⑤ HP1 URL</label><input type="text" id="hp_url_1"></div>
+      <div><label>⑥ HP1 タイトル</label><input type="text" id="hp_name_1"></div>
+      <div><label>⑥ HP1 URL</label><input type="text" id="hp_url_1"></div>
     </div>
     <div class="flex">
-      <div><label>⑥ HP2 タイトル</label><input type="text" id="hp_name_2"></div>
-      <div><label>⑥ HP2 URL</label><input type="text" id="hp_url_2"></div>
+      <div><label>⑦ HP2 タイトル</label><input type="text" id="hp_name_2"></div>
+      <div><label>⑦ HP2 URL</label><input type="text" id="hp_url_2"></div>
     </div>
     <div class="flex">
-      <div><label>⑦ HP3 タイトル</label><input type="text" id="hp_name_3"></div>
-      <div><label>⑦ HP3 URL</label><input type="text" id="hp_url_3"></div>
+      <div><label>⑧ HP3 タイトル</label><input type="text" id="hp_name_3"></div>
+      <div><label>⑧ HP3 URL</label><input type="text" id="hp_url_3"></div>
     </div>
   </div>
 
