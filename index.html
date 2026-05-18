@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: sans-serif; width: 400px; padding: 15px; background: #f9f9f9; }
+    body { font-family: sans-serif; width: 450px; padding: 15px; background: #f9f9f9; }
     h2 { font-size: 16px; margin-top: 0; color: #333; border-bottom: 2px solid #0075c2; padding-bottom: 5px; }
     .group { background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
     label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #555; }
@@ -16,19 +16,18 @@
     button { width: 100%; padding: 10px; background: #0075c2; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; }
     button:hover { background: #005a96; }
     #status { margin-top: 10px; font-size: 12px; color: green; text-align: center; font-weight: bold; min-height: 15px; }
+    .note { font-size: 11px; color: #777; margin-top: -5px; margin-bottom: 5px; }
   </style>
 </head>
 <body>
-  <h2>スカウト設定</h2>
+  <h2>マイナビ スカウト自動入力</h2>
   
   <div class="group">
     <label>① タイトル</label>
     <input type="text" id="subject" placeholder="タイトルを入力">
-  </div>
-
-  <div class="group">
-    <label class="checkbox-label">
-      <input type="checkbox" id="insert_name"> ② 学生の名前をさしこみ表示する
+    
+    <label class="checkbox-label" style="margin-top: 10px;">
+      <input type="checkbox" id="insert_name"> ② 学生の氏名を自動挿入する
     </label>
   </div>
 
@@ -38,7 +37,7 @@
   </div>
 
   <div class="group">
-    <label>④ 選考特徴アイコン</label>
+    <label>④ 企業の特徴アイコン（1つ選択）</label>
     <select id="feature_icon">
       <option value="">（選択しない）</option>
       <option value="つけない">つけない</option>
@@ -52,7 +51,7 @@
   </div>
 
   <div class="group">
-    <label>⑤ ホームページリンク</label>
+    <label>⑤ マイナビ2026内のページリンク</label>
     <select id="hp_link_flag">
       <option value="">（選択しない）</option>
       <option value="希望する">希望する</option>
@@ -61,17 +60,18 @@
   </div>
 
   <div class="group">
+    <p class="note">※以下のリンク設定は「⑤」で「希望する」を選んだ場合のみ有効になります。</p>
     <div class="flex">
-      <div><label>⑥ HP1 タイトル</label><input type="text" id="hp_name_1"></div>
-      <div><label>⑥ HP1 URL</label><input type="text" id="hp_url_1"></div>
+      <div><label>⑥ リンク1 タイトル</label><input type="text" id="hp_name_1"></div>
+      <div><label>⑥ リンク1 URL</label><input type="text" id="hp_url_1"></div>
     </div>
     <div class="flex">
-      <div><label>⑦ HP2 タイトル</label><input type="text" id="hp_name_2"></div>
-      <div><label>⑦ HP2 URL</label><input type="text" id="hp_url_2"></div>
+      <div><label>⑦ リンク2 タイトル</label><input type="text" id="hp_name_2"></div>
+      <div><label>⑦ リンク2 URL</label><input type="text" id="hp_url_2"></div>
     </div>
     <div class="flex">
-      <div><label>⑧ HP3 タイトル</label><input type="text" id="hp_name_3"></div>
-      <div><label>⑧ HP3 URL</label><input type="text" id="hp_url_3"></div>
+      <div><label>⑧ リンク3 タイトル</label><input type="text" id="hp_name_3"></div>
+      <div><label>⑧ リンク3 URL</label><input type="text" id="hp_url_3"></div>
     </div>
   </div>
 
